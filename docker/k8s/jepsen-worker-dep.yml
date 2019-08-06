@@ -1,0 +1,41 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: jepsen-system
+---
+# kubectl label node vm24 jepsen_worker=ci-cd
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: jepsen-worker
+  namespace: jepsen-system
+spec:
+  replicas: 6
+  template:
+    metadata:
+      labels:
+        app: jepsen-worker
+    spec:
+      nodeSelector:
+        jepsen_worker: "ci-cd"
+      containers:
+      - name: jepsen-worker
+        image: peterwillcn/jepsen_work:ubuntu-0.1.0
+        env:
+        - name: WORKER
+          value: "true"
+        ports:
+        - containerPort: 22
+          name: worker
+        resources:
+          limits:
+            cpu: 300m
+          requests:
+            cpu: 300m
+        volumeMounts:
+        - name: logs
+          mountPath: /opt
+      volumes:
+      - name: logs
+        hostPath:
+          path: /data/jepsen/logs

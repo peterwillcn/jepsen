@@ -1,29 +1,30 @@
-# Based on the deprecated `https://github.com/tutumcloud/tutum-debian`
-FROM debian:stretch
+FROM ubuntu:18.04
 
-# Install packages
-RUN apt-get update && \
-    apt-get -y install \
-        dos2unix \
-        openssh-server \
-        pwgen \
-        && \
-mkdir -p /var/run/sshd && \
-sed -i "s/UsePrivilegeSeparation.*/UsePrivilegeSeparation no/g" /etc/ssh/sshd_config && \
-sed -i "s/PermitRootLogin without-password/PermitRootLogin yes/g" /etc/ssh/sshd_config
+ENV DEBIAN_FRONTEND noninteractive
 
-ENV AUTHORIZED_KEYS **None**
+RUN sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
+RUN rm -rf /etc/apt/apt.conf.d/docker-clean && apt-get update
+# Install Jepsen dependencies
+RUN apt-get install -y openssh-server sudo \
+    curl faketime iproute2 iptables iputils-ping libzip4 \
+    logrotate man man-db net-tools ntpdate psmisc python rsyslog \
+    sudo unzip vim wget apt-transport-https \
+    && apt-get remove -y --purge --auto-remove systemd
+
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN mkdir /var/run/sshd
+RUN echo 'root:root' |chpasswd
+RUN sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN sed -ri 's/^#?UsePAM\s+.*/UsePAM no/' /etc/ssh/sshd_config
+
+RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
+Add authorized_keys /root/.ssh/authorized_keys
+RUN chmod 600 /root/.ssh/authorized_keys
 
 ADD run.sh /run.sh
-RUN dos2unix /run.sh \
-    && chmod +x /*.sh
-
-RUN apt-get update
-RUN apt install -y apt-transport-https
-RUN apt install -y software-properties-common
-
-# Install Jepsen deps
-RUN apt-get install -y build-essential bzip2 curl faketime iproute iptables iputils-ping libzip4 logrotate man man-db net-tools ntpdate psmisc python rsyslog sudo tar unzip vim wget && apt-get remove -y --purge --auto-remove systemd
+RUN chmod +x /*.sh
 
 EXPOSE 22
+
 CMD ["/run.sh"]

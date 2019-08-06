@@ -2,10 +2,8 @@ eval $(ssh-agent) &> /dev/null
 ssh-add /root/.ssh/id_rsa &> /dev/null
 
 cat <<EOF
-Welcome to Jepsen on Docker
+Welcome to Jepsen
 ===========================
-
-This container runs the Jepsen tests in sub-containers.
 
 You are currently in the base dir of the git repo for Jepsen.
 If you modify the core jepsen library make sure you "lein install" it so other tests can access.
